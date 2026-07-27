@@ -26,6 +26,22 @@ class VisualGridHuntGame:
             if pos_tuple != (0, 0) and pos_tuple not in self.walls:
                 self.food_positions.add(pos_tuple)
 
+
+        # IT24610787 - Step 2.1 - Decalring and populating toxic trap
+        self.toxic_traps = set()
+        while len(self.toxic_traps) < num_traps:
+            tx = random.randint(0, self.width-1)
+            ty = random.randint(0, self.height-1)
+            trap_tuple(tx, ty)
+
+            #avoiding starting postions, walls and food\
+            if(
+                trap_tuple != (0, 0) and
+                trap_tuple not in self.walls and
+                trap_tuple not in self.food_positions):
+                self.toxic_traps.add(trap_tuple)
+
+
         # Generate adversarial opponents
         self.opponents = []
         while len(self.opponents) < num_opponents:
@@ -37,7 +53,7 @@ class VisualGridHuntGame:
 
         self.score = 0
         self.steps = 0
-        self.collision = False
+        self.collision = False        
 
     def get_percept(self) -> dict:
         return {
@@ -47,7 +63,8 @@ class VisualGridHuntGame:
             'hit_wall': tuple(self.agent_pos) in self.walls,
             'collision': self.collision,
             'score': self.score,
-            'remaining_food': len(self.food_positions)
+            'remaining_food': len(self.food_positions),
+            'smells_toxin': tuple(self.agent_pos) in self.toxin_traps,  # Added by IT24610787  
         }
 
     def execute_action(self, action: str):
@@ -67,6 +84,12 @@ class VisualGridHuntGame:
             self.score -= 5
         else:
             self.agent_pos = new_pos
+
+
+        # Added by IT24610787
+        if tuple_pos in self.toxic_traps:
+            self.score -= 15
+
 
         tuple_pos = tuple(self.agent_pos)
         if tuple_pos in self.food_positions:
@@ -138,6 +161,15 @@ class GridGameGUI:
                 if self.cell_size >= 40 and (x, y) in self.env.walls:
                     self.canvas.create_text(x1 + self.cell_size / 2, y1 + self.cell_size / 2, text="W", fill="white",
                                             font=("Arial", 8, "bold"))
+
+        # Added by IT24610787
+        for tx, ty in self.env.toxic_traps:
+            offset = self.cell_size * 0.25
+            x1 = tx * self.cell_size + offset
+            y1 = (self.env.height - 1 - ty) * self.cell_size + offset
+            self.canvas.create_oval(x1, y1, x1 + self.cell_size * 0.5, y1 + self.cell_size + 0.5,
+                                    fill="#a855f7", outline="#7e22ce")
+
 
         for fx, fy in self.env.food_positions:
             offset = self.cell_size * 0.25
