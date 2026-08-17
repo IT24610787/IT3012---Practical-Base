@@ -6,7 +6,7 @@ import tkinter as tk
 class VisualGridHuntGame:
     """A flexible Pacman-style grid environment with support for configurable opponents and larger scales."""
 
-    def __init__(self, width=10, height=10, num_food=10, num_opponents=2, custom_walls=None):
+    def __init__(self, width=10, height=10, num_food=10, num_opponents=2, num_traps=0, custom_walls=None):
         self.width = width
         self.height = height
         self.agent_pos = [0, 0]  # Starting position (x, y)
@@ -32,7 +32,7 @@ class VisualGridHuntGame:
         while len(self.toxic_traps) < num_traps:
             tx = random.randint(0, self.width-1)
             ty = random.randint(0, self.height-1)
-            trap_tuple(tx, ty)
+            trap_tuple = (tx, ty)
 
             #avoiding starting postions, walls and food\
             if(
@@ -67,7 +67,10 @@ class VisualGridHuntGame:
 
         return {
             'wall_ahead': wall_ahead,
-            'food here': tuple(self.agent_pos) in self.food_positions
+            'food here': tuple(self.agent_pos) in self.food_positions,
+            'grid_size': (self.width, self.height),
+            'walls': list(self.walls),
+            'all_food': list(self.food_positions),
         }
 
         # return {
@@ -101,11 +104,11 @@ class VisualGridHuntGame:
 
 
         # Added by IT24610787
+        tuple_pos = tuple(self.agent_pos)
+
         if tuple_pos in self.toxic_traps:
             self.score -= 15
 
-
-        tuple_pos = tuple(self.agent_pos)
         if tuple_pos in self.food_positions:
             self.food_positions.remove(tuple_pos)
             self.score += 20

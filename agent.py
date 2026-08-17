@@ -1,6 +1,8 @@
 # agent.py
 import random
 
+from collections import deque
+
 class GreedyGridAgent:
     """A simple agent that tries to move around systematically to clear the grid."""
 
@@ -49,9 +51,9 @@ class ModelBasedAgent:
         
         return action
 
-# Added by IT24610787 as a placeholder until Lab3
+# Added by IT24610787 for Lab3
 class SearchAgent:
-    """Problem-Solving Agent implementing Breadth-First Search (BFS)."""
+    """Problem-Solving Agent implementing BFS, DFS and UCS"""
 
     def bfs_search(self, start_pos: tuple, goal_pos: tuple, walls: list, grid_size: tuple):
         width, height = grid_size
@@ -64,11 +66,11 @@ class SearchAgent:
             ('Right', (1, 0))
         ]
 
-        queue = [(start_pos, [])]
-        visited = {start_pos}
+        queue = deque([(start_pos, [])])
+        reached = {start_pos}
 
         while queue:
-            (curr_x, curr_y), path = queue.pop(0)
+            (curr_x, curr_y), path = queue.popleft()
 
             if (curr_x, curr_y) == goal_pos:
                 return path
@@ -78,8 +80,42 @@ class SearchAgent:
                 next_pos = (nx, ny)
 
                 if 0 <= nx < width and 0 <= ny < height:
-                    if next_pos not in wall_set and next_pos not in visited:
-                        visited.add(next_pos)
+                    if next_pos not in wall_set and next_pos not in reached:
+                        reached.add(next_pos)
                         queue.append((next_pos, path + [action_name]))
 
         return None
+
+    def dfs_search(self, start_pos: tuple, goal_pos: tuple, walls: list, grid_size: tuple):
+        width, height = grid_size
+        wall_set = set(walls)
+
+        directions = [
+            ('Up', (0,1)),
+            ('Down', (0,-1)),
+            ('Left', (-1, 0)),
+            ('Right', (1, 0)),
+        ]
+
+        stack = [(start_pos, [])]
+        reached = {start_pos}
+
+        while stack:
+            (curr_x, curr_y), path = stack.pop()
+
+            if(curr_x, curr_y) == goal_pos:
+                return path
+
+            for action_name, (dx, dy) in directions:
+                nx, ny = curr_x + dx, curr_y + dy
+                next_pos = (nx, ny)
+
+                if 0 <= nx < width and 0 <= ny < height:
+                    if next_pos not in wall_set and next_pos not in reached:
+                        reached.add(next_pos)
+                        stack.append((next_pos, path + [action_name]))
+
+        return None
+
+    def ucs_search(self, ):
+        
