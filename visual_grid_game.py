@@ -137,7 +137,8 @@ class VisualGridHuntGame:
 class GridGameGUI:
     """Tkinter wrapper that dynamically scales cell sizes to keep larger grids on screen."""
 
-    def __init__(self, root, width=10, height=10, num_food=12, num_opponents=2, walls=None, algo='BFS'):
+    def __init__(self, root, width=10, height=10, num_food=12, num_opponents=2, walls=None, algo='BFS', 
+                 heuristic='manhattan'):
         self.root = root
         self.root.title("IT3012 - Scalable Multi-Agent Grid Hunt")
 
@@ -147,6 +148,7 @@ class GridGameGUI:
         # Lab 3: goal-based search agent (algo = 'BFS', 'DFS' or 'UCS')
         self.agent = SearchAgent()
         self.agent.active_algo = algo
+        self.agent.heuristic_type = heuristic   # Lab 4: 'manhattan' or 'euclidean' (used by A*)
 
         # Dynamically calculate cell size so the total canvas fits nicely within a 600x600 window ceiling
         max_canvas_dim = 600
@@ -239,5 +241,5 @@ class GridGameGUI:
 if __name__ == "__main__":
     root = tk.Tk()
     # Try a larger grid size like 12x12 with 15 food and 3 opponents!
-    app = GridGameGUI(root, width=12, height=12, num_food=15, num_opponents=0, algo='BFS')  # try 'BFS','DFS' and 'UCS'
+    app = GridGameGUI(root, width=12, height=12, num_food=15, num_opponents=0, algo='AStar', heuristic='euclidean')  # try 'BFS','DFS','UCS','AStar'
     root.mainloop()

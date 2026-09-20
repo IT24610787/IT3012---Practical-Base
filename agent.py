@@ -1,5 +1,6 @@
 # agent.py
 import heapq
+import math
 import random
 
 from collections import deque
@@ -27,13 +28,14 @@ class SimpleReflexAgent:
         else:
             return 'Up'
 
-# Added by IT24610787 for Lab3
+# Added by IT24610787 for Lab3 & modified for Lab4
 class SearchAgent:
     """Problem-Solving Agent implementing BFS, DFS and UCS"""
 
     def __init__(self):
         self.plan = []               # offline plan: list of actions still to execute
-        self.active_algo = 'BFS'     # 'BFS', 'DFS' or 'UCS'
+        self.active_algo = 'BFS'     # 'BFS', 'DFS', 'UCS' or 'AStar'
+        self.heuristic_type = 'manhattan'   # used by A*: 'manhattan' or 'euclidean'
 
     def bfs_search(self, start_pos: tuple, goal_pos: tuple, walls: list, grid_size: tuple):
         width, height = grid_size
@@ -139,15 +141,75 @@ class SearchAgent:
 
         return None
 
+    # Lab 4, Step 1.1 - heuristic functions
+    def manhattan_distance(self, pos, goal):
+        """h(n) = |x1 - x2| + |y1 - y2|"""
+        return abs(pos[0] - goal[0]) + abs(pos[1] - goal[1])
+
+    def euclidean_distance(self, pos, goal):
+        """h(n) = sqrt((x1 - x2)^2 + (y1 - y2)^2)"""
+        return math.sqrt((pos[0] - goal[0]) ** 2 + (pos[1] - goal[1]) ** 2)
+
+    # Lab 4, Step 1.2 - A* search
+    def astar_search(self, start_pos, goal_pos, walls, grid_size, heuristic_type='manhattan'):
+        width, height = grid_size
+        wall_set = set(walls)
+
+        if heuristic_type == 'manhattan':
+            heuristic = self.manhattan_distance
+        elif heuristic_type == 'euclidean':
+            heuristic = self.euclidean_distance
+        else:
+            raise ValueError(f"Unknown heuristic '{heuristic_type}'. Use 'manhattan' or 'euclidean'.")
+
+        directions = [
+            ('Up', (0, 1)),
+            ('Down', (0, -1)),
+            ('Left', (-1, 0)),
+            ('Right', (1, 0)),
+        ]
+
+        reached_states = set()
+
+        # Tuple format: (f_cost, g_cost, current_pos, path_taken)
+        h_start = heuristic(start_pos, goal_pos)
+        frontier = [(0 + h_start, 0, start_pos, [])]
+
+        while frontier:
+            f_cost, g_cost, current_pos, path_taken = heapq.heappop(frontier)
+
+            if current_pos == goal_pos:
+                return path_taken
+
+            # The same cell can be pushed more than once; skip stale copies
+            if current_pos in reached_states:
+                continue
+            reached_states.add(current_pos)
+
+            curr_x, curr_y = current_pos
+            for action_name, (dx, dy) in directions:
+                nx, ny = curr_x + dx, curr_y + dy
+                next_pos = (nx, ny)
+
+                if 0 <= nx < width and 0 <= ny < height:
+                    if next_pos not in wall_set and next_pos not in reached_states:
+                        g_new = g_cost + 1
+                        h_new = heuristic(next_pos, goal_pos)
+                        f_new = g_new + h_new
+                        heapq.heappush(frontier, (f_new, g_new, next_pos, path_taken + [action_name]))
+
+        return None
+
     def _make_plan(self, percept: dict) -> list:
         """Pick the closest food (Manhattan distance) and search for a path to it."""
         searches = {
             'BFS': self.bfs_search,
             'DFS': self.dfs_search,
             'UCS': self.ucs_search,
+            'AStar': lambda s, g, w, gs: self.astar_search(s, g, w, gs, self.heuristic_type),
         }
         if self.active_algo not in searches:
-            raise ValueError(f"Unknown algorithm '{self.active_algo}'. Use 'BFS', 'DFS' or 'UCS'.")
+            raise ValueError(f"Unknown algorithm '{self.active_algo}'. Use 'BFS', 'DFS', 'UCS' or 'AStar'.")
         search = searches[self.active_algo]
 
         start = tuple(percept['agent_pos'])
@@ -171,3 +233,9 @@ class SearchAgent:
             return 'Stay'   # no food left, or none reachable
 
         return self.plan.pop(0)
+
+if __name__ == "__main__":
+    # Lab 4 - Step 1.1 testing checkpoint
+    _agent = SearchAgent()
+    print("Manhattan:", _agent.manhattan_distance((0, 0), (3, 4)))   # expected 7
+    print("Euclidean:", _agent.euclidean_distance((0, 0), (3, 4)))   # expected 5.0
