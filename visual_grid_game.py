@@ -2,6 +2,7 @@
 import random
 import tkinter as tk
 
+from agent import SearchAgent
 
 class VisualGridHuntGame:
     """A flexible Pacman-style grid environment with support for configurable opponents and larger scales."""
@@ -66,8 +67,9 @@ class VisualGridHuntGame:
         )
 
         return {
+            'agent_pos': list(self.agent_pos),   # Lab 3: the search needs a start state
             'wall_ahead': wall_ahead,
-            'food here': tuple(self.agent_pos) in self.food_positions,
+            'food_here': tuple(self.agent_pos) in self.food_positions,   # was 'food here'
             'grid_size': (self.width, self.height),
             'walls': list(self.walls),
             'all_food': list(self.food_positions),
@@ -129,18 +131,22 @@ class VisualGridHuntGame:
                 self.collision = True
 
     def is_done(self) -> bool:
-        return len(self.food_positions) == 0 or self.steps >= 60 or self.collision
+        return len(self.food_positions) == 0 or self.steps >= 300 or self.collision
 
 
 class GridGameGUI:
     """Tkinter wrapper that dynamically scales cell sizes to keep larger grids on screen."""
 
-    def __init__(self, root, width=10, height=10, num_food=12, num_opponents=2, walls=None):
+    def __init__(self, root, width=10, height=10, num_food=12, num_opponents=2, walls=None, algo='BFS'):
         self.root = root
         self.root.title("IT3012 - Scalable Multi-Agent Grid Hunt")
 
         self.env = VisualGridHuntGame(width=width, height=height, num_food=num_food, num_opponents=num_opponents,
                                       custom_walls=walls)
+
+        # Lab 3: goal-based search agent (algo = 'BFS', 'DFS' or 'UCS')
+        self.agent = SearchAgent()
+        self.agent.active_algo = algo
 
         # Dynamically calculate cell size so the total canvas fits nicely within a 600x600 window ceiling
         max_canvas_dim = 600
@@ -184,8 +190,8 @@ class GridGameGUI:
             offset = self.cell_size * 0.25
             x1 = tx * self.cell_size + offset
             y1 = (self.env.height - 1 - ty) * self.cell_size + offset
-            self.canvas.create_oval(x1, y1, x1 + self.cell_size * 0.5, y1 + self.cell_size + 0.5,
-                                    fill="#a855f7", outline="#7e22ce")
+            self.canvas.create_oval(x1, y1, x1 + self.cell_size * 0.5, y1 + self.cell_size * 0.5,
+                        fill="#a855f7", outline="#7e22ce")
 
 
         for fx, fy in self.env.food_positions:
@@ -214,11 +220,13 @@ class GridGameGUI:
 
         def step():
             if not self.env.is_done():
-                action = random.choice(['Up', 'Down', 'Left', 'Right'])
+                percept = self.env.get_percept()
+                action = self.agent.sense_and_act(percept)
                 self.env.execute_action(action)
 
                 self.draw_grid()
-                self.label.config(text=f"Score: {self.env.score} | Steps: {self.env.steps} | Action: {action}")
+                self.label.config(
+                    text=f"[{self.agent.active_algo}] Score: {self.env.score} | Steps: {self.env.steps} | Action: {action}")
                 self.root.after(250, step)
             else:
                 end_text = f"Collision! Game Over! Final Score: {self.env.score}" if self.env.collision else f"Finished! Final Score: {self.env.score}"
@@ -231,5 +239,5 @@ class GridGameGUI:
 if __name__ == "__main__":
     root = tk.Tk()
     # Try a larger grid size like 12x12 with 15 food and 3 opponents!
-    app = GridGameGUI(root, width=12, height=12, num_food=15, num_opponents=0)
+    app = GridGameGUI(root, width=12, height=12, num_food=15, num_opponents=0, algo='BFS')  # try 'BFS','DFS' and 'UCS'
     root.mainloop()
